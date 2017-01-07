@@ -9,16 +9,16 @@ mov ax,0x5000
 mov gs,ax
 mov ax,-1
 mov [gs:0x3C],ax
-mov [gs:0x13C],ax
-mov ax,1
+;mov [gs:0x13C],ax
+neg ax
 mov [gs:0x40],ax
-mov [gs:0x140],ax
+;mov [gs:0x140],ax
 mov ax,320
 mov [gs:0x3E],ax
-mov [gs:0x13E],ax
-mov ax,-320
+;mov [gs:0x13E],ax
+neg ax
 mov [gs:0x22],ax
-mov [gs:0x122],ax
+;mov [gs:0x122],ax
 
 ;cli
 ; mov al,00110100b
@@ -35,22 +35,19 @@ mov bx,4000
 mov ax,-32000
 upv:
   bts [fs:bx],ax
+  neg ax
+  bts [fs:bx],ax
+  neg ax
   inc ax
-  cmp ax,-31680
+  cmp ax,-30720
 jl upv
-mov ax,30720
-downv:
-  bts [fs:bx],ax
-  inc ax
-  cmp ax,32000
-jl downv
-mov ax,-31673
+mov bp,-30720+4
 leftv:
-  bts [fs:bx],ax
-  add ax,305
-  bts [fs:bx],ax
-  add ax,15
-  cmp ax,31680
+  call sbp
+  add bp,308
+  call sbp
+  add bp,12+320*3
+  cmp bp,30720
 jl leftv
 
 mov bp,143
@@ -77,21 +74,33 @@ xchg dx,bp
 call sbp
 xchg dx,bp
 mov [gs:0],dx
+mov dx,[cs:0x046C]
+mov [gs:2],dx
 lp:
   sal ax,2
   add bp,ax
   sar ax,2
   xor bp,0x07
   mov dx,[gs:0]
-  push ax
   cmp bp,dx
   jne .vv
-  call sbp
-  mov ax,dx
+  push ax
 .nlp:
-  mov bx,137
-  mul bx
+  mov ax,[gs:2]
+  mov bx,ax
+  shr ax,2
+  xor bx,ax
+  shr ax,1
+  xor bx,ax
+  shr ax,2
+  xor bx,ax
+  shl bx,15
+  mov ax,[gs:2]
+  shr ax,1
+  or ax,bx
+  mov [gs:2],ax
   mov bx,4000
+  xor dx,dx
   div bx
   mov ax,dx
   xor dx,dx
@@ -105,25 +114,20 @@ lp:
   mov bx,4000
   bt [fs:bx],dx
   jc .nlp
-  xchg dx,bp
-  push dx
-  mov dx,0x3C4
-  mov ax,0x5502
-  out dx,ax
   call sbp
-  mov ax,0xff02
-  out dx,ax
-  pop dx
-  mov al,3
+  xchg dx,bp
+  call sbp
   xchg dx,bp
   mov [gs:0],dx
   mov al,4
   stosb
-.vv:
   pop ax
+  ;jmp .kk
+.vv:
   call sbp
   jc end
   xor bp,0x07
+.kk:
 
   cmp ax,0
   jg .v0
@@ -174,8 +178,8 @@ lp:
 .il:
   mov bx,dx
   push dx
-  xor bh,bh
   shl bx,1
+  xor bh,bh
   mov ax,[gs:bx]
   test ax,ax
   jnz .cccc
@@ -229,8 +233,8 @@ cld
 .vlv:
 in al,0x60
 mov bl,al
-xor bh,bh
 shl bx,1
+xor bh,bh
 mov ax,[gs:bx]
 test al,al
 jnz .vlv
