@@ -64,14 +64,7 @@ initl:
   add bp,ax
   stosb
   xor bp,0x07
-  bts [fs:bx],bp
-  inc bp
-  bts [fs:bx],bp
-  add bp,320
-  bts [fs:bx],bp
-  dec bp
-  bts [fs:bx],bp
-  sub bp,320
+  call sbp
   xor bp,0x07
   cmp bp,159
 jl initl
@@ -82,6 +75,9 @@ mov dx, bp
 add dx, ax
 add dx, ax
 xor dx, 0x07
+xchg dx,bp
+call sbp
+xchg dx,bp
 mov [gs:0],dx
 lp:
   add bp,ax
@@ -90,7 +86,7 @@ lp:
   mov dx,[gs:0]
   cmp bp,dx
   jne .vv
-  btr [fs:bx],dx
+  call sbp
   push ax
   mov ax,dx
 .nlp:
@@ -108,8 +104,11 @@ lp:
   sub dx,32001
   xor dx,7
   mov bx,4000
-  bts [fs:bx],dx
+  bt [fs:bx],dx
   jc .nlp
+  xchg dx,bp
+  call sbp
+  xchg dx,bp
   mov [gs:0],dx
   mov al,4
   stosb
