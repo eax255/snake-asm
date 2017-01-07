@@ -1,75 +1,71 @@
+jmp begin
+nop
+db "MSDOS5.0"
+dw 512
+db 1
+dw 1
+db 2
+dw 224
+dw 2880
+db 240
+dw 9
+dw 18
+dw 2
+dd 0
+dd 0
+db 0
+db 0
+db 41
+dd 1
+;db "BOOT FLOPPY"
+;db "FAT12   "
 begin:
 mov ax,0x000D
 int 0x10
 mov ax,0xa000
 mov fs,ax
-mov ax,0x7000
-mov ss,ax
-mov ax,0x5000
+;mov ax,0x7000
+;mov ss,ax
+mov ah,0x50
 mov gs,ax
-mov ax,-1
-mov [gs:0x3C],ax
-;mov [gs:0x13C],ax
-neg ax
-mov [gs:0x40],ax
-;mov [gs:0x140],ax
-mov ax,320
-mov [gs:0x3E],ax
-;mov [gs:0x13E],ax
-neg ax
-mov [gs:0x22],ax
-;mov [gs:0x122],ax
-
-;cli
-; mov al,00110100b
-; out 0x43, al
-; xor al,al
-; out 0x40, al
-; out 0x40, al
-;sti
-
-mov ax,0x6000
+mov ah,0x60
 mov ds,ax
 mov es,ax
+
 mov bx,4000
 mov ax,-32000
 upv:
   bts [fs:bx],ax
-  neg ax
+  not ax
   bts [fs:bx],ax
   neg ax
-  inc ax
   cmp ax,-30720
 jl upv
-mov bp,-30720+4
+mov bp,-30720+3
 leftv:
   call sbp
-  add bp,308
+  add bp,316
   call sbp
-  add bp,12+320*3
+  add bp,4+320*3
   cmp bp,30720
 jl leftv
 
 mov bp,143
 mov cx,147
-mov ax,1
+mov ax,4
 
 xor si,si
 xor di,di
 initl:
-  add bp,4
+  add bp,ax
   stosb
-  xor bp,0x07
   call sbp
-  xor bp,0x07
   cmp bp,159
 jl initl
 dec di
-mov dl,0x40
-push dx
+push ax
 mov dx, bp
-add dx, 4
-xor dx, 0x07
+add dx, ax
 xchg dx,bp
 call sbp
 xchg dx,bp
@@ -77,10 +73,7 @@ mov [gs:0],dx
 mov dx,[cs:0x046C]
 mov [gs:2],dx
 lp:
-  sal ax,2
   add bp,ax
-  sar ax,2
-  xor bp,0x07
   mov dx,[gs:0]
   cmp bp,dx
   jne .vv
@@ -110,61 +103,60 @@ lp:
   add dx,ax
   shl dx,2
   sub dx,32001
-  xor dx,7
   mov bx,4000
+  xor dx,0x7
   bt [fs:bx],dx
   jc .nlp
+  xor dx,0x7
   call sbp
   xchg dx,bp
   call sbp
   xchg dx,bp
   mov [gs:0],dx
-  mov al,4
+  mov al,3
   stosb
   pop ax
   ;jmp .kk
 .vv:
   call sbp
   jc end
-  xor bp,0x07
 .kk:
 
   cmp ax,0
   jg .v0
-  add ax,320
+  add ax,1280
 .v0:
-  cmp ax,2
-  jl .v1
-  sub ax,317
+  cmp ax,4
+  jle .v1
+  sub ax,1268
 .v1:
   stosb
   lodsb
-  cmp ax,4
+  xor ah,ah
+  cmp ax,3
   je .skip
-  cmp ax,2
-  jl .v2
-  add ax,317
+  cmp ax,4
+  jle .v2
+  add ax,1268
 .v2:
   test ax,ax
   jz .v3
-  cmp ax,319
+  cmp ax,1276
   jne .v4
 .v3:
-  sub ax,320
+  sub ax,1280
 .v4:
 
-  xor cx,0x07
   xchg cx,bp
   call sbp
   xchg cx,bp
-  xor cx,0x07
-  sal ax,2
   add cx,ax
 .skip:
 
 
   mov ax,[cs:0x046C]
-  add ax,2
+  inc ax
+  inc ax
 .slp:
   mov dx,[cs:0x046C]
   cmp dx,ax
@@ -172,53 +164,67 @@ lp:
 
   pop dx
   in al,0x60
-  test al,al
-  jz .il
-  mov dl,al
-.il:
+  and al,0x7f
+  mov bx,-1280
+  cmp al,0x11
+  je .v
+  neg bx
+  cmp al,0x1f
+  je .v
+  mov bx,-4
+  cmp al,0x1e
+  je .v
+  neg bx
+  cmp al,0x20
+  je .v
   mov bx,dx
-  push dx
-  shl bx,1
-  xor bh,bh
-  mov ax,[gs:bx]
-  test ax,ax
-  jnz .cccc
-  mov ax,1
-.cccc:
+.v:neg dx
+  cmp dx,bx
+  jne .llll
+  neg bx
+.llll:
+  push bx
+  mov ax,bx
   mov bx,4000
 
 jmp lp
 sbps:
+  push bp
   inc bp
   btc [fs:bx],bp
   add bp,320
   btc [fs:bx],bp
   dec bp
   btc [fs:bx],bp
-  sub bp,320
+  pop bp
   btc [fs:bx],bp
 ret
 sbp:
-  add bp,2
+  push bp
+  xor bp,0x7
+  push bp
+  inc bp
+  inc bp
   call sbps
   add bp,640
   call sbps
-  sub bp,2
+  dec bp
+  dec bp
   call sbps
-  sub bp,640
+  pop bp
   call sbps
+  pop bp
 ret
 end:
 sub di,si
-push di
 xor ax,ax
 int 0x10
 mov ax,0xb800
 mov es,ax
-pop ax
-mov di,38
+xchg ax,di
+mov di,10
 std
-mov bx,10
+mov bx,di
 .plp:
 xor dx,dx
 div bx
@@ -226,18 +232,14 @@ xchg ax,dx
 add al,'0'
 stosb
 dec di
-mov ax,dx
+xchg ax,dx
 test ax,ax
 jnz .plp
 cld
 .vlv:
 in al,0x60
-mov bl,al
-shl bx,1
-xor bh,bh
-mov ax,[gs:bx]
-test al,al
-jnz .vlv
+cmp al,0x81
+jne .vlv
 jmp begin
 
 times 510-($-$$) db 0
