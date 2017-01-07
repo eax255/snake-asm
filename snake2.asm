@@ -20,17 +20,18 @@ dd 1
 ;db "BOOT FLOPPY"
 ;db "FAT12   "
 begin:
-mov ax,0x000D
-int 0x10
-mov ax,0xa000
-mov fs,ax
-;mov ax,0x7000
-;mov ss,ax
-mov ah,0x50
+mov ax,0x5000
 mov gs,ax
+;mov ah,0x70
+;mov ss,ax
 mov ah,0x60
 mov ds,ax
 mov es,ax
+
+mov ah,0xa0
+mov fs,ax
+mov ax,0x000D
+int 0x10
 
 mov bx,4000
 mov ax,-32000
@@ -192,9 +193,9 @@ sbps:
   push bp
   inc bp
   btc [fs:bx],bp
-  add bp,320
+  inc bp
   btc [fs:bx],bp
-  dec bp
+  inc bp
   btc [fs:bx],bp
   pop bp
   btc [fs:bx],bp
@@ -202,45 +203,60 @@ ret
 sbp:
   push bp
   xor bp,0x7
-  push bp
-  inc bp
-  inc bp
+  push cx
+  mov cx,4
+  add bp,320*4
+.l:
+  sub bp,320
   call sbps
-  add bp,640
-  call sbps
-  dec bp
-  dec bp
-  call sbps
-  pop bp
-  call sbps
+  loop .l
+  pop cx
   pop bp
 ret
+
 end:
 sub di,si
 xor ax,ax
 int 0x10
 mov ax,0xb800
 mov es,ax
-xchg ax,di
-mov di,10
 std
-mov bx,di
-.plp:
-xor dx,dx
-div bx
-xchg ax,dx
-add al,'0'
-stosb
-dec di
-xchg ax,dx
-test ax,ax
-jnz .plp
+
+push di
+xchg ax,di
+mov di,90
+call put
+pop di
+
+mov ax,0x0000
+.v:
+cmp ax,di
+cmovl ax,di
+mov [cs:.v-2+0x7C00],ax
+
+mov di,bx
+call put
 cld
 .vlv:
 in al,0x60
 cmp al,0x81
 jne .vlv
 jmp begin
+
+put:
+mov bx,10
+.plp:
+xor dx,dx
+div bx
+xchg ax,dx
+or al,'0'
+stosb
+dec di
+xchg ax,dx
+or ax,ax
+jnz .plp
+ret
+
 
 times 510-($-$$) db 0
 dw 0xaa55
