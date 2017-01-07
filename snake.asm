@@ -211,9 +211,13 @@ jnz .plp
 cld
 .vlv:
 in al,0x60
-cmp al,0xA0
-je begin
-jmp .vlv
+mov bl,al
+xor bh,bh
+shl bx,1
+mov ax,[gs:bx]
+test ax,ax
+jnz .vlv
+jmp begin
 
 times 510-($-$$) db 0
 dw 0xaa55
